@@ -25,12 +25,28 @@ import { Button } from "./ui/button";
 import { BookOpen, CopyCheck } from "lucide-react";
 import { Separator } from "./ui/separator";
 import { Input } from "./ui/input";
-
+import { useMutation } from "@tanstack/react-query";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 type Props = {};
 
 type Input = z.infer<typeof quizCreationSchema>;
 
 const QuizCreation = (props: Props) => {
+  // we're practically creating the submit handler to hit that game creation endpoint
+  const { mutate: getQuestions, isPending } = useMutation({
+    mutationFn: async ({ amount, topic, type }: Input) => {
+      const response = await axios.post("/api/game", {
+        amount,
+        topic,
+        type,
+      });
+      return response.data;
+    }, // the func that mutates server state
+  });
+
+  const router = useRouter();
+
   const form = useForm<Input>({
     // the resolver kinda binds react hook form and zod
     resolver: zodResolver(quizCreationSchema),
@@ -42,9 +58,27 @@ const QuizCreation = (props: Props) => {
   });
 
   const onSubmit = (input: Input) => {
-    alert(JSON.stringify(input, null, 2));
+    getQuestions(
+      {
+        amount: input.amount,
+        topic: input.topic,
+        type: input.type,
+      },
+      {
+        onSuccess: ([gameId]) => {
+          // parameters are what the axios call returns.
+          // here too, we're using the form outside the form UI
+          if (form.getValues("type") == "open_ended") {
+            router.push(`/play/open-ended/${gameId}`);
+          } else {
+            router.push(`/play/mcq/${gameId}`);
+          }
+        },
+      }
+    );
   };
 
+  // we're using the form well outside the form UI?
   form.watch();
 
   return (
@@ -122,7 +156,9 @@ const QuizCreation = (props: Props) => {
                   <BookOpen className="w-4 h-4 mr-2" /> Open Ended
                 </Button>
               </div>
-              <Button type="submit">Submit</Button>
+              <Button disabled={isPending} type="submit">
+                Submit
+              </Button>
             </form>
           </Form>
         </CardContent>

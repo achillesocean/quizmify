@@ -2,6 +2,9 @@
 import React from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 const Providers = ({
   children,
@@ -9,15 +12,17 @@ const Providers = ({
 }: React.ComponentProps<typeof NextThemesProvider>) => {
   // explain what's happening with the ...props and the type?
   return (
-    <NextThemesProvider
-      attribute={"class"}
-      defaultTheme="system"
-      enableSystem
-      {...props}
-    >
-      {/* again, what's happening with ...props here? */}
-      <SessionProvider>{children}</SessionProvider>
-    </NextThemesProvider>
+    <QueryClientProvider client={queryClient}>
+      <NextThemesProvider
+        attribute={"class"}
+        defaultTheme="system"
+        enableSystem
+        {...props}
+      >
+        {/* again, what's happening with ...props here? */}
+        <SessionProvider>{children}</SessionProvider>
+      </NextThemesProvider>
+    </QueryClientProvider>
   );
 };
 
